@@ -108,3 +108,29 @@ func Test_Parse(t *testing.T) {
 		},
 	)
 }
+
+func TestParse_DuplicateServiceSameName(t *testing.T) {
+	dir := t.TempDir()
+	file1 := filepath.Join(dir, "file1.api")
+	content1 := `syntax = "v1"
+service A {
+    @handler login
+    post /login (LoginReq) returns (LoginRsp)
+}`
+	assert.NoError(t, os.WriteFile(file1, []byte(content1), 0o644))
+
+	file2 := filepath.Join(dir, "file2.api")
+	content2 := `syntax = "v1"
+service A {
+    @handler relogin
+    post /relogin (LoginReq) returns (LoginRsp)
+}`
+	assert.NoError(t, os.WriteFile(file2, []byte(content2), 0o644))
+
+	rootFile := filepath.Join(dir, "root.api")
+	rootContent := fmt.Sprintf("syntax = \"v1\"\nimport \"%s\"\nimport \"%s\"\n", file1, file2)
+	assert.NoError(t, os.WriteFile(rootFile, []byte(rootContent), 0o644))
+
+	_, err := Parse(rootFile, nil)
+	assert.Nil(t, err)
+}
